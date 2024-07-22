@@ -36,6 +36,7 @@ import {
 	showErrorNotification,
 } from "../../utils/notifications";
 import { LineGraphRates } from "../../types/redux/graph";
+//import { number } from "prop-types";
 // import { set } from "lodash";
 
 /**
@@ -84,30 +85,17 @@ export default function CreateUnitModalComponent() {
 		setState({ ...state, [e.target.name]: JSON.parse(e.target.value) });
 	};
 
-	const [customRate, setCustomRate] = useState("");
-	const [showCustomInput, setShowCustomInput] = useState(false);
+	//const CUSTOM_INPUT = "";
+	//create a new useState to keep track of the current drop option
+	// ( drop dwon option you selected) or whatver text is insdie the text box
+	//textbox: new state would be a number , the 2nd rate gonna contain either a standerd vakue or impossible value
+	//check weeather that indciator exists, if yes then when you submit, you want to supply whats in ur state variable, ortheriwse whatver is in sec in rate
+	//weather you show the textbox depends on the impossible variable,
 
-	const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const { value } = e.target;
-		// Check if the custom value option is selected
-		if (value === "0") {
-			setShowCustomInput(true);
-		} else {
-			setShowCustomInput(false);
-			setState({ ...state, [e.target.name]: Number(value) });
-			// Handle other changes for secInRate
-			// Update the state for other options like seconds, minutes, etc.
-		}
-	};
-
-	// const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-	// 	setState({ ...state, [e.target.name]: Number(e.target.value) });
-	// };
-
-	const handleCustomRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const { value } = e.target;
-		setCustomRate(value);
-		// You might want to update the state or context with this new value
+	//The value of secInRate is set to Number(e.target.value). This means the function takes the value from the event's target (the input element), converts it to a number
+	// (since input values are strings by default), and updates the secInRate property in the state with this numeric value.
+	const handleSecInRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setState({ ...state, secInRate: Number(e.target.value) });
 	};
 
 	/* Create Unit Validation:
@@ -169,6 +157,11 @@ export default function CreateUnitModalComponent() {
 		...tooltipBaseStyle,
 		tooltipCreateUnitView: "help.admin.unitcreate",
 	};
+
+	//made to loop thru the values in LineGraphRates to dertemin where if if is standerd value or not
+	const rateInSecIsStandard = Object.values(LineGraphRates).includes(
+		state.secInRate / 3600
+	);
 
 	return (
 		<>
@@ -358,7 +351,7 @@ export default function CreateUnitModalComponent() {
 										id="secInRate"
 										name="secInRate"
 										type="select"
-										onChange={(e) => handleNumberChange(e)}
+										onChange={(e) => handleSecInRateChange(e)}
 										value={state.secInRate}
 									>
 										{Object.entries(LineGraphRates).map(
@@ -368,14 +361,16 @@ export default function CreateUnitModalComponent() {
 												</option>
 											)
 										)}
-										<option value={"0"}>{translate("custom.value")}</option>
+										<option value={rateInSecIsStandard ? 0 : state.secInRate}>
+											{translate("custom.value")}
+										</option>
 									</Input>
-									{showCustomInput && (
+									{!rateInSecIsStandard && (
 										<Input
 											type="number"
-											value={customRate}
-											onChange={handleCustomRateChange}
-											placeholder={translate("unit.seconds.placeholder")} // Assuming you have a placeholder translation
+											value={state.secInRate}
+											onChange={(e) => handleSecInRateChange(e)}
+											//placeholder={translate("sec.in.rate.enter")} // Assuming you have a placeholder translatiom
 										/>
 									)}
 									<FormFeedback>
