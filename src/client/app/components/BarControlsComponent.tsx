@@ -30,6 +30,7 @@ export default function BarControlsComponent() {
 	// This is the current bar interval for graphic.
 	const barDuration = useAppSelector(selectBarWidthDays);
 	const barStacking = useAppSelector(selectBarStacking);
+
 	// Holds the value of standard bar duration choices used so decoupled from custom.
 	const [barDays, setBarDays] = React.useState<string>(
 		barDuration.asDays().toString()
@@ -39,6 +40,7 @@ export default function BarControlsComponent() {
 	const [barDaysCustom, setBarDaysCustom] = React.useState<number>(
 		barDuration.asDays()
 	);
+	
 	// True if custom bar duration input is active.
 	const [showCustomBarDuration, setShowCustomBarDuration] =
 		React.useState<boolean>(false);
