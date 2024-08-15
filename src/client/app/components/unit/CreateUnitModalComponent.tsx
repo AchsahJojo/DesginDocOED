@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 import * as React from "react";
 import { useEffect, useState } from "react";
 import {
@@ -32,8 +36,6 @@ import {
   showErrorNotification,
 } from "../../utils/notifications";
 import { LineGraphRates } from "../../types/redux/graph";
-//import { number } from "prop-types";
-// import { set } from "lodash";
 
 /**
  * Defines the create unit modal form
@@ -42,7 +44,6 @@ import { LineGraphRates } from "../../types/redux/graph";
 export default function CreateUnitModalComponent() {
   const [submitCreateUnit] = unitsApi.useAddUnitMutation();
   const translate = useTranslate();
-
   const defaultValues = {
     name: "",
     identifier: "",
@@ -53,13 +54,13 @@ export default function CreateUnitModalComponent() {
     secInRate: 3600,
     suffix: "",
     note: "",
+    defaultValue: "1",
     // These two values are necessary but are not used.
     // The client code makes the id for the selected unit and default graphic unit be -99
     // so it can tell it is not yet assigned and do the correct logic for that case.
     // The units API expects these values to be undefined on call so that the database can assign their values.
     id: -99,
   };
-
   /* State */
   // Unlike EditUnitModalComponent, there are no props so we don't pass show and close via props.
   // Modal show
@@ -69,69 +70,42 @@ export default function CreateUnitModalComponent() {
     resetState();
   };
   const handleShow = () => setShowModal(true);
-
   // Handlers for each type of input change
   const [state, setState] = useState(defaultValues);
-
   const handleStringChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setState({ ...state, [e.target.name]: e.target.value });
   };
-
   const handleBooleanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setState({ ...state, [e.target.name]: JSON.parse(e.target.value) });
   };
-
   const CUSTOM_INPUT = "-99";
-
+  // Sets the starting rate for secInRate box, value of 3600 is chosen as default to result in Hour as default in dropdown box.
+  const [rate, setRate] = useState("3600");
   // Holds the value during custom value input and it is separate from standard choices.
-  const [customRate, setCustomRate] = useState(CUSTOM_INPUT);
-  // True if custom value input is active.
+  const [customRate, setCustomRate] = useState(1);
+  // should only update customrate when save all is clicked
+  // This should keep track of rate's value and set custom rate equal to it when csutom rate is clicked
+  // This should set customRate's data to True if custom value input is active.
   const [showCustomInput, setShowCustomInput] = useState(false);
-
-  //function that response to a chnage in secInRate
-  //   React.useEffect(() => {
-  //     const isCustom = ![...Object.values(LineGraphRates), CUSTOM_INPUT].find(
-  //       (rate) => rate == state.secInRate
-  //     );
-  //     setShowCustomInput(isCustom);
-  //     setCustomRate(isCustom ? CUSTOM_INPUT : state.secInRate.toString());
-  //   }, [state.secInRate]);
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     // Check if the custom value option is selected
     if (value === CUSTOM_INPUT) {
-      setCustomRate(value);
-      console.log("This is the handleNumberChange: " + value);
+      setRate(CUSTOM_INPUT);
+      setCustomRate(Number(rate));
       setShowCustomInput(true);
     } else {
-      setShowCustomInput(false);
+      setRate(value);
       setState({ ...state, [e.target.name]: Number(value) });
-      // Handle other changes for secInRate
-      // Update the state for other options like seconds, minutes, etc.
+      setShowCustomInput(false);
     }
   };
-
-  // const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  // 	setState({ ...state, [e.target.name]: Number(e.target.value) });
-  // };
-
   const handleCustomRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    setCustomRate(value);
-    console.log("this is the handleCustomRateChange :  " + value);
-    //number shows up but does not update the state
-    // You might want to update the state or context with this new value
+    setCustomRate(Number(value));
+    setState({ ...state, secInRate: Number(value) });
   };
-
-  const handleEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      console.log(customRate);
-      setState({ ...state, secInRate: Number(customRate) });
-      //setShowCustomInput(false);
-    }
-  };
-
   /* Create Unit Validation:
 		Name cannot be blank
 		Sec in Rate must be greater than zero
@@ -139,22 +113,32 @@ export default function CreateUnitModalComponent() {
 	*/
   const [validUnit, setValidUnit] = useState(false);
   useEffect(() => {
+    console.log(state.secInRate);
     setValidUnit(
       state.name !== "" &&
-        state.secInRate > 0 &&
+        Number.isInteger(Number(state.secInRate)) &&
+        Number(state.secInRate) >= 1 &&
         (state.typeOfUnit !== UnitType.suffix || state.suffix !== "")
     );
   }, [state.name, state.secInRate, state.typeOfUnit, state.suffix]);
-  /* End State */
 
+  const customRateValid = (customRate: number) => {
+    return Number.isInteger(customRate) && customRate >= 1;
+  };
+  /* End State */
   // Reset the state to default values
   const resetState = () => {
     setState(defaultValues);
+    resetCustomRate();
   };
-
+  // Helper function to reset custom rate interval box.
+  const resetCustomRate = () => {
+    setCustomRate(1);
+    setRate("3600");
+    setShowCustomInput(false);
+  };
   // Unlike edit, we decided to discard inputs when you choose to leave the page. The reasoning is
   // that create starts from an empty template.
-
   // Submit
   const handleSubmit = () => {
     // Close modal first to avoid repeat clicks
@@ -186,12 +170,10 @@ export default function CreateUnitModalComponent() {
       });
     resetState();
   };
-
   const tooltipStyle = {
     ...tooltipBaseStyle,
     tooltipCreateUnitView: "help.admin.unitcreate",
   };
-
   return (
     <>
       {/* Show modal button */}
@@ -381,7 +363,7 @@ export default function CreateUnitModalComponent() {
                     name="secInRate"
                     type="select"
                     onChange={(e) => handleNumberChange(e)}
-                    value={state.secInRate}
+                    value={rate}
                   >
                     {Object.entries(LineGraphRates).map(
                       ([rateKey, rateValue]) => (
@@ -395,18 +377,23 @@ export default function CreateUnitModalComponent() {
                     </option>
                   </Input>
                   {showCustomInput && (
-                    <Input
-                      type="number"
-                      value={customRate}
-                      onKeyDown={(e) => handleEnter(e)}
-                      onChange={(e) => handleCustomRateChange(e)}
-                      placeholder={translate("Type a value, Then press Enter")} // Assuming you have a placeholder translation
-                    />
+                    <>
+                      <Label for="customRate"></Label>
+                      <Input
+                        id="customRate"
+                        name="customRate"
+                        type="number"
+                        value={customRate}
+                        min={1}
+                        invalid={!customRateValid(customRate)}
+                        onChange={(e) => handleCustomRateChange(e)}
+                      />
+                    </>
                   )}
                   <FormFeedback>
                     <FormattedMessage
                       id="error.greater"
-                      values={{ min: "0" }}
+                      values={{ min: "1" }}
                     />
                   </FormFeedback>
                 </FormGroup>

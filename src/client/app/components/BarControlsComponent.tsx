@@ -35,6 +35,7 @@ export default function BarControlsComponent() {
 	const [barDays, setBarDays] = React.useState<string>(
 		barDuration.asDays().toString()
 	);
+	
 	// Holds the value during custom bar duration input so only update graphic when done entering and
 	// separate from standard choices.
 	const [barDaysCustom, setBarDaysCustom] = React.useState<number>(
